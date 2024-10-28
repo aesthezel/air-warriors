@@ -53,6 +53,8 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
     private ScoreGUI scoreGUI;
     private DebugGUI debugGUI;
 
+    private boolean debugMode;
+
     // Own Methods
     private void drawGUI(Stage stage, Skin skin) {
         // Window GUI
@@ -127,6 +129,10 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
     public void render() {
         ScreenUtils.clear(0f, 0f, 0f, 1f);
 
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F1)) {
+            debugMode = !debugMode; // Alternar el modo de depuración
+        }
+
         // Actualiza el jugador y pasa la lista de objetivos
         playerShip.update(Gdx.graphics.getDeltaTime(), targets);
 
@@ -136,6 +142,7 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
             enemy.update(Gdx.graphics.getDeltaTime(), players);
         }
 
+        // Draw calls
         spriteBatch.begin();
         int tileWidth = 16;
         int tileHeight = 16;
@@ -145,11 +152,19 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
         // Draw calls
         spriteBatch.begin();
         playerShip.draw(spriteBatch);
+        if(debugMode)
+        {
+            playerShip.drawDebug();
+        }
 
         for(Damagable target : targets)
         {
-            Entity enemy = (Entity) target;
+            Ship enemy = (Ship) target;
             enemy.draw(spriteBatch);
+            if (debugMode)
+            {
+                enemy.drawDebug();
+            }
         }
 
         spriteBatch.end();
@@ -166,9 +181,10 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
 
         scoreGUI.draw();
 
-        // DEBUG
-        debugGUI.update(playerShip);
-        debugGUI.draw();
+        if (debugMode) {
+            debugGUI.update(playerShip);
+            debugGUI.draw();
+        }
     }
 
     @Override

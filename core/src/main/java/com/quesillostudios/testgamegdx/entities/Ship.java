@@ -6,6 +6,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -18,8 +19,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 public class Ship extends Entity implements Damagable, Disposable {
+    protected ShapeRenderer shapeRenderer;
     protected TextureRegion shipRegion;
     protected Texture bulletTexture;
+
     protected ArrayList<Bullet> bullets;
 
     protected Rectangle bounds;
@@ -32,6 +35,7 @@ public class Ship extends Entity implements Damagable, Disposable {
         super(position.x, position.y, speed);
         setSpriteBySector(shipTexture, spriteSector);
 
+        this.shapeRenderer = new ShapeRenderer();
         this.bulletTexture = bulletTexture;
         this.bullets = new ArrayList<>();
         this.bounds = new Rectangle(position.x, position.y, shipRegion.getRegionWidth(), shipRegion.getRegionHeight()); // Ajusta según el tamaño de tu sprite
@@ -122,6 +126,13 @@ public class Ship extends Entity implements Damagable, Disposable {
         for (Bullet bullet : bullets) {
             bullet.draw(spriteBatch);
         }
+    }
+
+    public void drawDebug() {
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(1, 0, 0, 1);
+        shapeRenderer.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+        shapeRenderer.end();
     }
 
     @Override
