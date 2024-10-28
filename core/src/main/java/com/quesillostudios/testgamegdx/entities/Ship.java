@@ -2,36 +2,52 @@ package com.quesillostudios.testgamegdx.entities;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Disposable;
 import com.quesillostudios.testgamegdx.entities.interfaces.Damagable;
 import com.quesillostudios.testgamegdx.objects.Bullet;
+import com.quesillostudios.testgamegdx.utils.FileUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class Ship extends Entity implements Damagable
-{
-    private TextureRegion shipRegion;
-    private Texture bulletTexture;
-    private ArrayList<Bullet> bullets;
+public class Ship extends Entity implements Damagable, Disposable {
+    protected TextureRegion shipRegion;
+    protected Texture bulletTexture;
+    protected ArrayList<Bullet> bullets;
 
-    private Rectangle bounds;
+    protected Rectangle bounds;
 
-    public Ship(Texture shipTexture, Texture bulletTexture) {
-        super(0, 0, 200f);
-        this.shipRegion = new TextureRegion(shipTexture, 0, 0, 32, 32);
+    // Sonidos
+    protected Sound hittedSound;
+    protected Sound beatedSound;
+
+    public Ship(Vector2 position, float speed, Vector2 spriteSector, Texture shipTexture, Texture bulletTexture, String hittedSoundFilePath, String beatedSoundFilePath) {
+        super(position.x, position.y, speed);
+        setSpriteBySector(shipTexture, spriteSector);
+
         this.bulletTexture = bulletTexture;
         this.bullets = new ArrayList<>();
-        this.bounds = new Rectangle(0, 0, shipRegion.getRegionWidth(), shipRegion.getRegionHeight());
+        this.bounds = new Rectangle(position.x, position.y, shipRegion.getRegionWidth(), shipRegion.getRegionHeight()); // Ajusta según el tamaño de tu sprite
+        this.hittedSound = Gdx.audio.newSound(FileUtils.GetInternalPath(hittedSoundFilePath));
+        this.beatedSound = Gdx.audio.newSound(FileUtils.GetInternalPath(beatedSoundFilePath));
     }
 
-    private void move(float delta)
-    {
+    private void setSpriteBySector(Texture shipTexture, Vector2 sector) {
+        int sectorWidth = 32;
+        int sectorHeight = 32;
+        int x = ((int)sector.x - 1) * sectorWidth;
+        int y = ((int)sector.y - 1) * sectorHeight;
+        this.shipRegion = new TextureRegion(shipTexture, x, y, sectorWidth, sectorHeight);
+    }
+
+    private void move(float delta) {
         if (Gdx.input.isKeyPressed(Input.Keys.W)) {
             position.y += speed * delta;
         }
@@ -48,11 +64,8 @@ public class Ship extends Entity implements Damagable
         bounds.setPosition(position.x, position.y);
     }
 
-    // TODO: create a delay to shoot again...
-    private void shoot()
-    {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE))
-        {
+    private void shoot() {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
             Vector2 bulletPosition = new Vector2((position.x + shipRegion.getRegionWidth() / 2) - 8, (position.y + shipRegion.getRegionHeight() - 16));
             Bullet bullet = new Bullet(bulletTexture, bulletPosition.x, bulletPosition.y, 1f, 500f, 1);
             bullets.add(bullet);
@@ -83,8 +96,7 @@ public class Ship extends Entity implements Damagable
         }
     }
 
-    private void boundLimits()
-    {
+    private void boundLimits() {
         position.x = MathUtils.clamp(position.x, 0, Gdx.graphics.getWidth() - shipRegion.getRegionWidth());
         position.y = MathUtils.clamp(position.y, 0, Gdx.graphics.getHeight() - shipRegion.getRegionHeight());
     }
@@ -95,34 +107,38 @@ public class Ship extends Entity implements Damagable
     }
 
     @Override
-    public void update(float delta, ArrayList<Damagable> targets)
-    {
+    public void update(float delta, ArrayList<Damagable> targets) {
         move(delta);
         boundLimits();
-
         shoot();
         controlBullets(delta, targets);
     }
 
     @Override
-    public void draw(SpriteBatch spriteBatch)
-    {
+    public void draw(SpriteBatch spriteBatch) {
         spriteBatch.draw(shipRegion, position.x, position.y);
 
         // Draw bullet
-        for (Bullet bullet : bullets)
-        {
+        for (Bullet bullet : bullets) {
             bullet.draw(spriteBatch);
         }
     }
 
     @Override
     public void takeDamage(float damage) {
-
+        // Reproducir sonido de daño
+        hittedSound.play(1f);
+        // Implementar lógica para la salud
     }
 
     @Override
     public boolean isAlive() {
-        return true;
+        return true; // Implementar lógica según tu juego
+    }
+
+    @Override
+    public void dispose() {
+        hittedSound.dispose();
+        beatedSound.dispose();
     }
 }

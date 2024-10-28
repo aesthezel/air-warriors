@@ -3,6 +3,7 @@ package com.quesillostudios.testgamegdx;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
@@ -102,12 +103,16 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
 
         // SETUP PLAYER
         shipsTexture = new Texture(FileUtils.GetInternalPath("tilesets/ships_packed.png"));
-        playerShip = new Ship(shipsTexture, backgroundTexture);
+        Vector2 playerPosition = new Vector2(0f, 0f);
+        Vector2 playerSpriteSector = new Vector2(1, 1);
+        playerShip = new Ship(playerPosition, 300f, playerSpriteSector, shipsTexture, backgroundTexture, "audio/pepSound2.ogg", "audio/twoTone1.ogg");
         players = new ArrayList<>();
         players.add(playerShip);
 
         // SETUP ENEMIES
-        EnemyShip enemyShip = new EnemyShip(Gdx.graphics.getWidth() / 2, (Gdx.graphics.getHeight() / 2f) + 50f, 100, shipsTexture, backgroundTexture, this);
+        Vector2 enemyPosition = new Vector2(Gdx.graphics.getWidth() / 2, (Gdx.graphics.getHeight() / 2f) + 50f);
+        Vector2 enemySpriteSector = new Vector2(1, 5);
+        EnemyShip enemyShip = new EnemyShip(enemyPosition, 200f, enemySpriteSector, shipsTexture, backgroundTexture, "audio/pepSound1.ogg", "audio/tone1.ogg", this);
         targets = new ArrayList<>();
         targets.add(enemyShip);
 
@@ -188,11 +193,13 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
     public void onKill(Damagable enemy, boolean bonus) {
         damagablesOnPendingRemoval.add(enemy);
         if(bonus)
-            scoreGUI.increaseScore(10);
+            scoreGUI.addScore(10);
+        else
+            scoreGUI.addScore(-5);
     }
 
     @Override
     public void onTriggered() {
-        scoreGUI.increaseScore(1);
+        scoreGUI.addScore(1);
     }
 }

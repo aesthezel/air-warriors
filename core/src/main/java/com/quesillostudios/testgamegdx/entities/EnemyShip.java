@@ -3,9 +3,9 @@ package com.quesillostudios.testgamegdx.entities;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Disposable;
 import com.quesillostudios.testgamegdx.entities.interfaces.Damagable;
 import com.quesillostudios.testgamegdx.objects.Bullet;
 import com.quesillostudios.testgamegdx.utils.interfaces.EnemyEventListener;
@@ -13,28 +13,20 @@ import com.quesillostudios.testgamegdx.utils.interfaces.EnemyEventListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-// TODO: create a POO compatibility with Ship
-public class EnemyShip extends Entity implements Damagable {
+public class EnemyShip extends Ship implements Damagable, Disposable {
 
     private float health;
     private float damage;
-    private TextureRegion shipRegion;
-    private Texture bulletTexture;
-    private Rectangle bounds;
     private EnemyEventListener killListener;
 
     private float direction = 1; // 1 = RIGHT, -1 = LEFT
     private float fireCooldown = 1.0f;
     private float timeSinceLastShot = 0f;
 
-    private ArrayList<Bullet> bullets;
-    public EnemyShip(float x, float y, float speed, Texture shipTexture, Texture bulletTexture, EnemyEventListener killListener) {
-        super(x, y, speed);
+    public EnemyShip(Vector2 position, float speed, Vector2 spriteSector, Texture shipTexture, Texture bulletTexture, String hittedSoundFilePath, String beatedSoundFilePath, EnemyEventListener killListener) {
+        super(position, speed, spriteSector, shipTexture, bulletTexture, hittedSoundFilePath, beatedSoundFilePath);
         this.health = 3;
         this.damage = 10;
-        this.shipRegion = new TextureRegion(shipTexture, 0, 128, 32, 32);
-        this.bounds = new Rectangle(x, y, shipRegion.getRegionWidth(), shipRegion.getRegionHeight());
-        this.bulletTexture = bulletTexture;
         this.killListener = killListener;
         this.bullets = new ArrayList<>();
         this.shipRegion.flip(false, true);
@@ -47,10 +39,10 @@ public class EnemyShip extends Entity implements Damagable {
 
     @Override
     public void update(float delta, ArrayList<Damagable> targets) {
-        move(delta);
-        checkForCollisions(targets);
-        controlBullets(delta, targets);
-        shoot(delta);
+        move(delta); // Mover el enemigo
+        checkForCollisions(targets); // Verificar colisiones
+        controlBullets(delta, targets); // Controlar las balas
+        shoot(delta); // Disparar
     }
 
     private void controlBullets(float delta, ArrayList<Damagable> targets) {
@@ -106,20 +98,30 @@ public class EnemyShip extends Entity implements Damagable {
                 Entity entity = (Entity) target;
                 if (this.getBounds().overlaps(entity.getBounds())) {
                     target.takeDamage(damage);
-                    killListener.onKill(this, false);
+                    kill(false);
                     System.out.println("Enemy hit target!");
                 }
             }
         }
     }
 
+    private void kill(boolean bonus) {
+        beatedSound.play(1f);
+        killListener.onKill(this, bonus);
+    }
+
+    private void hitted() {
+        hittedSound.play(1f);
+        killListener.onTriggered();
+    }
+
     @Override
     public void takeDamage(float damage) {
         health -= damage;
         if (health <= 0) {
-            killListener.onKill(this, true); // Notificar que el enemigo ha sido destruido
+            kill(true);
         } else {
-            killListener.onTriggered(); // Otras acciones al recibir daño
+            hitted();
         }
     }
 
@@ -128,12 +130,15 @@ public class EnemyShip extends Entity implements Damagable {
         return health > 0;
     }
 
+    @Override
     public void draw(SpriteBatch spriteBatch) {
         spriteBatch.draw(shipRegion, position.x, position.y);
+        super.draw(spriteBatch); // Llama al método draw de Ship para dibujar balas
+    }
 
-        for (Bullet bullet : bullets)
-        {
-            bullet.draw(spriteBatch);
-        }
+    @Override
+    public void dispose() {
+        hittedSound.dispose();
+        beatedSound.dispose();
     }
 }
