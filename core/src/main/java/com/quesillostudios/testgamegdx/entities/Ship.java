@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.quesillostudios.testgamegdx.entities.interfaces.Damagable;
 import com.quesillostudios.testgamegdx.objects.Bullet;
 
@@ -17,7 +18,7 @@ public class Ship extends Entity implements Damagable
 {
     private TextureRegion shipRegion;
     private Texture bulletTexture;
-    private ArrayList<Bullet> bullets; // Lista de balas
+    private ArrayList<Bullet> bullets;
 
     private Rectangle bounds;
 
@@ -29,7 +30,7 @@ public class Ship extends Entity implements Damagable
         this.bounds = new Rectangle(0, 0, shipRegion.getRegionWidth(), shipRegion.getRegionHeight());
     }
 
-    private void movement(float delta)
+    private void move(float delta)
     {
         if (Gdx.input.isKeyPressed(Input.Keys.W)) {
             position.y += speed * delta;
@@ -43,6 +44,8 @@ public class Ship extends Entity implements Damagable
         if (Gdx.input.isKeyPressed(Input.Keys.D)) {
             position.x += speed * delta;
         }
+
+        bounds.setPosition(position.x, position.y);
     }
 
     // TODO: create a delay to shoot again...
@@ -50,7 +53,8 @@ public class Ship extends Entity implements Damagable
     {
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE))
         {
-            Bullet bullet = new Bullet(bulletTexture, position.x + shipRegion.getRegionWidth() / 2 - 8, position.y + shipRegion.getRegionHeight(), 1f); // Ajusta la posición de la bala
+            Vector2 bulletPosition = new Vector2((position.x + shipRegion.getRegionWidth() / 2) - 8, (position.y + shipRegion.getRegionHeight() - 16));
+            Bullet bullet = new Bullet(bulletTexture, bulletPosition.x, bulletPosition.y, 1f, 500f, 1);
             bullets.add(bullet);
         }
     }
@@ -61,20 +65,18 @@ public class Ship extends Entity implements Damagable
             Bullet bullet = bulletIterator.next();
             bullet.update(delta);
 
-            // Verificar si la bala está fuera de pantalla
             if (bullet.isOffScreen()) {
-                bulletIterator.remove(); // Eliminar la bala si está fuera de pantalla
+                bulletIterator.remove();
                 continue;
             }
 
-            // Comprobar colisiones con los objetos Damagable
             for (Damagable target : targets) {
-                if (target instanceof Entity) { // Asegúrate de que el objetivo sea una entidad
+                if (target instanceof Entity) {
                     Entity entity = (Entity) target;
                     if (bullet.getBounds().overlaps(entity.getBounds())) {
-                        target.takeDamage(bullet.getDamage()); // Aplica daño
-                        bulletIterator.remove(); // Destruir la bala
-                        break; // Salir del bucle si hubo un impacto
+                        target.takeDamage(bullet.getDamage());
+                        bulletIterator.remove();
+                        break;
                     }
                 }
             }
@@ -95,7 +97,7 @@ public class Ship extends Entity implements Damagable
     @Override
     public void update(float delta, ArrayList<Damagable> targets)
     {
-        movement(delta);
+        move(delta);
         boundLimits();
 
         shoot();

@@ -11,81 +11,102 @@ import com.quesillostudios.testgamegdx.objects.Bullet;
 import com.quesillostudios.testgamegdx.utils.interfaces.EnemyEventListener;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
+// TODO: create a POO compatibility with Ship
 public class EnemyShip extends Entity implements Damagable {
 
     private float health;
     private float damage;
-    private TextureRegion shipRegion; // Textura del enemigo
+    private TextureRegion shipRegion;
     private Texture bulletTexture;
-    private Rectangle bounds; // Área de colisión
+    private Rectangle bounds;
     private EnemyEventListener killListener;
 
-    private float direction = 1; // 1 = derecha, -1 = izquierda
-    private float fireCooldown = 1.0f; // Tiempo entre disparos en segundos
-    private float timeSinceLastShot = 0f; // Tiempo transcurrido desde el último disparo
+    private float direction = 1; // 1 = RIGHT, -1 = LEFT
+    private float fireCooldown = 1.0f;
+    private float timeSinceLastShot = 0f;
 
-    private ArrayList<Bullet> bullets; // Lista de balas
-
+    private ArrayList<Bullet> bullets;
     public EnemyShip(float x, float y, float speed, Texture shipTexture, Texture bulletTexture, EnemyEventListener killListener) {
         super(x, y, speed);
-        this.health = 3; // Salud inicial del enemigo
-        this.damage = 10; // Daño que inflige
+        this.health = 3;
+        this.damage = 10;
         this.shipRegion = new TextureRegion(shipTexture, 0, 128, 32, 32);
         this.bounds = new Rectangle(x, y, shipRegion.getRegionWidth(), shipRegion.getRegionHeight());
         this.bulletTexture = bulletTexture;
         this.killListener = killListener;
         this.bullets = new ArrayList<>();
-        // Voltear la textura verticalmente para que apunte hacia abajo
         this.shipRegion.flip(false, true);
     }
 
     @Override
     public Rectangle getBounds() {
-        return bounds; // Devuelve el área de colisión
+        return bounds;
     }
 
     @Override
     public void update(float delta, ArrayList<Damagable> targets) {
-        move(delta); // Movimiento en zigzag descendente
-        checkForCollisions(targets); // Verificar colisiones con otros objetivos
-        shoot(delta); // Disparo automático
+        move(delta);
+        checkForCollisions(targets);
+        controlBullets(delta, targets);
+        shoot(delta);
     }
 
-    // Movimiento en zigzag descendente
-    private void move(float delta) {
-        position.x += direction * speed * delta; // Movimiento lateral
+    private void controlBullets(float delta, ArrayList<Damagable> targets) {
+        Iterator<Bullet> bulletIterator = bullets.iterator();
+        while (bulletIterator.hasNext()) {
+            Bullet bullet = bulletIterator.next();
+            bullet.update(delta);
 
-        // Cambiar de dirección y descender al llegar a los bordes de la pantalla
+            if (bullet.isOffScreen()) {
+                bulletIterator.remove();
+                continue;
+            }
+
+            for (Damagable target : targets) {
+                if (target instanceof Entity) {
+                    Entity entity = (Entity) target;
+                    if (bullet.getBounds().overlaps(entity.getBounds())) {
+                        target.takeDamage(bullet.getDamage());
+                        bulletIterator.remove();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void move(float delta) {
+        position.x += direction * speed * delta;
+
         if (position.x <= 0 || position.x + bounds.width >= Gdx.graphics.getWidth()) {
-            direction *= -1; // Cambia de dirección
-            position.y -= 20; // Desciende cada vez que cambia de dirección
+            direction *= -1;
+            position.y -= 20;
         }
 
-        bounds.setPosition(position.x, position.y); // Actualizar área de colisión
+        bounds.setPosition(position.x, position.y);
     }
 
-    // Lógica de disparo automático
     private void shoot(float delta) {
         timeSinceLastShot += delta;
         if (timeSinceLastShot >= fireCooldown) {
             timeSinceLastShot = 0f;
 
-            // Crear una nueva bala y añadirla al juego
-            Vector2 bulletPosition = new Vector2(position.x + bounds.width / 2, position.y);
-            Bullet bullet = new Bullet(bulletTexture, bulletPosition.x, bulletPosition.y, 1f); // Velocidad hacia abajo
+            Vector2 bulletPosition = new Vector2((position.x + shipRegion.getRegionWidth() / 2) - 8, (position.y + shipRegion.getRegionHeight() - 32));
+            Bullet bullet = new Bullet(bulletTexture, bulletPosition.x, bulletPosition.y, 1f, 500f, -1); // Velocidad hacia abajo
 
             bullets.add(bullet);
         }
     }
 
-    // Verificar colisiones con otros objetivos
     private void checkForCollisions(ArrayList<Damagable> targets) {
         for (Damagable target : targets) {
             if (target instanceof Entity) {
                 Entity entity = (Entity) target;
                 if (this.getBounds().overlaps(entity.getBounds())) {
-                    target.takeDamage(damage); // Aplica daño al objetivo
+                    target.takeDamage(damage);
+                    killListener.onKill(this, false);
                     System.out.println("Enemy hit target!");
                 }
             }
@@ -96,7 +117,7 @@ public class EnemyShip extends Entity implements Damagable {
     public void takeDamage(float damage) {
         health -= damage;
         if (health <= 0) {
-            killListener.onKill(this); // Notificar que el enemigo ha sido destruido
+            killListener.onKill(this, true); // Notificar que el enemigo ha sido destruido
         } else {
             killListener.onTriggered(); // Otras acciones al recibir daño
         }
@@ -104,7 +125,7 @@ public class EnemyShip extends Entity implements Damagable {
 
     @Override
     public boolean isAlive() {
-        return health > 0; // Devuelve verdadero si el enemigo aún está vivo
+        return health > 0;
     }
 
     public void draw(SpriteBatch spriteBatch) {

@@ -33,4 +33,6 @@ public abstract class Entity {
 
     public abstract void update(float delta, ArrayList<Damagable> targets);
     public abstract void draw(SpriteBatch spriteBatch);
+
+    public abstract boolean isAlive();
 }

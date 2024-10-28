@@ -28,6 +28,7 @@ import com.quesillostudios.testgamegdx.utils.interfaces.EventListener;
 import com.quesillostudios.testgamegdx.world.Scene;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter implements EnemyEventListener {
@@ -45,6 +46,7 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
 
     private ArrayList<Damagable> targets;
     private ArrayList<Damagable> players;
+    private ArrayList<Damagable> damagablesOnPendingRemoval;
 
     // UI
     private ScoreGUI scoreGUI;
@@ -109,6 +111,8 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
         targets = new ArrayList<>();
         targets.add(enemyShip);
 
+        damagablesOnPendingRemoval = new ArrayList<>();
+
         stage = new Stage(new FitViewport(1280, 720));
         skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         drawGUI(stage, skin);
@@ -120,6 +124,7 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
 
         // Actualiza el jugador y pasa la lista de objetivos
         playerShip.update(Gdx.graphics.getDeltaTime(), targets);
+
         for(Damagable target : targets)
         {
             Entity enemy = (Entity) target;
@@ -135,12 +140,20 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
         // Draw calls
         spriteBatch.begin();
         playerShip.draw(spriteBatch);
+
         for(Damagable target : targets)
         {
             Entity enemy = (Entity) target;
             enemy.draw(spriteBatch);
         }
+
         spriteBatch.end();
+
+        // Safe to remove
+        for (Damagable enemy : damagablesOnPendingRemoval) {
+            targets.remove(enemy);
+        }
+        damagablesOnPendingRemoval.clear();
 
         // Scene 2D Actors
         stage.act(Gdx.graphics.getDeltaTime());
@@ -172,9 +185,10 @@ public class Main extends ApplicationAdapter implements EnemyEventListener {
     }
 
     @Override
-    public void onKill(Damagable enemy) {
-        targets.remove(enemy);
-        scoreGUI.increaseScore(10);
+    public void onKill(Damagable enemy, boolean bonus) {
+        damagablesOnPendingRemoval.add(enemy);
+        if(bonus)
+            scoreGUI.increaseScore(10);
     }
 
     @Override

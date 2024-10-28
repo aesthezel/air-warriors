@@ -13,9 +13,9 @@ public class Bullet {
     private float damage;
     private TextureRegion bulletRegion;
 
-    public Bullet(Texture bulletTexture, float x, float y, float damage) {
+    public Bullet(Texture bulletTexture, float x, float y, float damage, float speed, float direction) {
         this.position = new Vector2(x, y);
-        this.speed = 500f; // Velocidad de la bala
+        this.speed = speed * direction; // Velocidad de la bala
         this.bulletRegion = new TextureRegion(bulletTexture, 0, 0, 16, 16); // Cambia la región según tu tileset
         this.damage = damage;
     }
